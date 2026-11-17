@@ -76,13 +76,55 @@
       <div class="wordmark" aria-hidden="true"><span>RAGA MURTADHA</span></div>`;
   }
 
-  // No CV file yet: keep the button visible but tell the visitor.
+  // Download CV: ask which language first, then download that PDF.
+  const CV = [
+    { lang: "English", note: "For international and remote roles", code: "EN", file: "assets/cv/RagaMurtadha_ProductDesigner_CV_EN.pdf" },
+    { lang: "Bahasa Indonesia", note: "Untuk perusahaan di Indonesia", code: "ID", file: "assets/cv/RagaMurtadha_ProductDesigner_CV_ID.pdf" }
+  ];
+  const cvModal = document.createElement("div");
+  cvModal.className = "cv-modal";
+  cvModal.setAttribute("aria-hidden", "true");
+  cvModal.innerHTML = `
+    <div class="cv-backdrop" data-cv-close></div>
+    <div class="cv-dialog glass" role="dialog" aria-modal="true" aria-labelledby="cv-title">
+      <div class="cv-head">
+        <div><h3 id="cv-title">Download CV</h3><p class="t-body-sm muted">Choose a language</p></div>
+        <button class="cv-x" type="button" aria-label="Close" data-cv-close><i class="ph-duotone ph-x"></i></button>
+      </div>
+      <div class="cv-options">
+        ${CV.map((c) => `
+          <a class="cv-option" href="${c.file}" download data-cv-pick>
+            <span class="cv-badge">${c.code}</span>
+            <span class="cv-text"><strong>${c.lang}</strong><span>${c.note}</span></span>
+            <i class="ph-duotone ph-download-simple"></i>
+          </a>`).join("")}
+      </div>
+    </div>`;
+  document.body.appendChild(cvModal);
+  let cvReturn = null;
+  const openCv = (from) => {
+    cvReturn = from;
+    cvModal.classList.add("open");
+    cvModal.setAttribute("aria-hidden", "false");
+    document.documentElement.style.overflow = "hidden";
+    cvModal.querySelector(".cv-option").focus();
+  };
+  const closeCv = () => {
+    if (!cvModal.classList.contains("open")) return;
+    cvModal.classList.remove("open");
+    cvModal.setAttribute("aria-hidden", "true");
+    document.documentElement.style.overflow = "";
+    cvReturn && cvReturn.focus();
+  };
   document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-cv-close]")) return closeCv();
+    if (e.target.closest("[data-cv-pick]")) return setTimeout(closeCv, 150);
     const cv = e.target.closest("[data-cv]");
     if (!cv) return;
     e.preventDefault();
-    toast("CV is coming soon — reach me on LinkedIn in the meantime.");
+    openCv(cv);
   });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeCv(); });
 
   function toast(msg) {
     let t = document.querySelector(".toast");
@@ -94,7 +136,7 @@
   // Fade out before navigating to another page of the site
   document.addEventListener("click", (e) => {
     const a = e.target.closest("a[href]");
-    if (!a || a.target === "_blank" || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    if (!a || a.target === "_blank" || a.hasAttribute("download") || e.metaKey || e.ctrlKey || e.shiftKey) return;
     const href = a.getAttribute("href");
     if (!href || href.startsWith("#") || href.startsWith("mailto:") || /^https?:/.test(href)) return;
     const url = new URL(href, location.href);
